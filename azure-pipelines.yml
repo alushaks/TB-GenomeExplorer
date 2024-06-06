@@ -1,0 +1,23 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: |
+    # Download reference genome
+    wget -O mtb_asm19595v2.fa "https://www.ncbi.nlm.nih.gov/genome/16?genome_assembly_id=19595"
+
+    # Perform read alignment using BWA
+    bwa index mtb_asm19595v2.fa
+    bwa mem mtb_asm19595v2.fa sample_reads.fastq > aligned_reads.sam
+
+    # Convert SAM file to BAM format and sort
+    samtools view -bS aligned_reads.sam | samtools sort -o aligned_reads.sorted.bam -
+
+    # Perform variant calling using GATK
+    java -jar GenomeAnalysisTK.jar -T HaplotypeCaller -R mtb_asm19595v2.fa -I aligned_reads.sorted.bam -o variants.vcf
+
+    # Additional analysis steps
+  displayName: 'Mtb WGS Analysis Pipeline'
